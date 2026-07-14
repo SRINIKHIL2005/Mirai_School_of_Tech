@@ -1,6 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 
+# Gemini Configuration
 
 API_KEY = "YOUR_GEMINI_API_KEY"
 
@@ -8,102 +9,95 @@ genai.configure(api_key=API_KEY)
 
 model = genai.GenerativeModel("gemini-2.5-flash")
 
+# Assignment 3
+# Memory Vault
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
 # Page Config
+
 st.set_page_config(
     page_title="AI Multiverse",
     layout="wide"
 )
 
 st.title("🌌 AI Multiverse")
-
 st.write("Talk with different AI personalities powered by Gemini!")
 
-# TASK 1
 # Sidebar
 
-st.sidebar.title("App Settings")
-
-# TASK 2
-# Persona Expansion
+st.sidebar.title("⚙️ App Settings")
 
 personality = st.sidebar.selectbox(
-
     "Choose a Personality",
-
     [
-
-        "Helpful Assistant ",
-
-        "Panicked College Student ",
-
-        "1920s Mafia Boss ",
-
-        "Sarcastic Fitness Coach ",
-
-        "Shakespeare ",
-
-        "Pirate Captain ",
-
-
+        "Helpful Assistant 🤖",
+        "Panicked College Student 😰",
+        "1920s Mafia Boss 🕴️",
+        "Sarcastic Fitness Coach 💪",
+        "Shakespeare 🎭",
+        "Pirate Captain 🏴‍☠️"
     ]
-
 )
-
-# TASK 3
-# Intensity Slider
 
 intensity = st.sidebar.slider(
-
     "Intensity Level",
-
     min_value=1,
-
     max_value=10,
-
     value=5
-
 )
 
-# User Input
-
-user_input = st.text_input(" Ask Anything")
-
-# TASK 5
 # Dynamic Avatar
 
-if personality == "Helpful Assistant ":
-    bot_avatar = "🤖"
+avatar_map = {
+    "Helpful Assistant 🤖": "🤖",
+    "Panicked College Student 😰": "😰",
+    "1920s Mafia Boss 🕴️": "🕴️",
+    "Sarcastic Fitness Coach 💪": "💪",
+    "Shakespeare 🎭": "🎭",
+    "Pirate Captain 🏴‍☠️": "🏴‍☠️"
+}
 
-elif personality == "Panicked College Student 😰":
-    bot_avatar = "😰"
+bot_avatar = avatar_map.get(personality, "🤖")
 
-elif personality == "1920s Mafia Boss 🕴️":
-    bot_avatar = "🕴️"
+# Display Previous Chat History
 
-elif personality == "Sarcastic Fitness Coach 💪":
-    bot_avatar = "💪"
+for message in st.session_state.messages:
 
-elif personality == "Shakespeare 🎭":
-    bot_avatar = "🎭"
+    avatar = "🙂" if message["role"] == "user" else bot_avatar
 
-elif personality == "Pirate Captain 🏴‍☠️":
-    bot_avatar = "🏴‍☠️"
+    with st.chat_message(message["role"], avatar=avatar):
+        st.markdown(message["content"])
 
-else:
-    bot_avatar = "🤖"
+# Chat Input (Assignment 3)
 
-# SEND BUTTON
+if user_input := st.chat_input("Say something..."):
 
-if st.button("SEND"):
+    # Display User Message
 
-    if user_input.strip() == "":
-        st.warning("Please enter a message.")
+    with st.chat_message("user", avatar="🙂"):
+        st.markdown(user_input)
 
-    else:
+    # Save User Message
 
-        # Prompt Engineering
+    st.session_state.messages.append(
+        {
+            "role": "user",
+            "content": user_input
+        }
+    )
 
-        ai_instructions = f"""
+    # Conversation History
+
+    history = ""
+
+    for msg in st.session_state.messages:
+        history += f"{msg['role']}: {msg['content']}\n"
+
+    # Prompt Engineering
+
+    ai_instructions = f"""
 You are acting as:
 
 {personality}
@@ -118,21 +112,30 @@ behave only slightly like the personality.
 If the intensity is high,
 fully immerse yourself in the character while still answering accurately.
 
-Respond to the user's message naturally.
+Continue the conversation naturally using the previous conversation history.
+
+Conversation History:
+
+{history}
 
 User:
 {user_input}
 """
 
-        response = model.generate_content(ai_instructions)
+    # Gemini Response
 
-        # TASK 4
-        # Chat UI
+    response = model.generate_content(ai_instructions)
 
-        with st.chat_message("user", avatar="🙂"):
+    # Display Assistant Response
 
-            st.write(user_input)
+    with st.chat_message("assistant", avatar=bot_avatar):
+        st.markdown(response.text)
 
-        with st.chat_message("assistant", avatar=bot_avatar):
+    # Save Assistant Response
 
-            st.write(response.text)
+    st.session_state.messages.append(
+        {
+            "role": "assistant",
+            "content": response.text
+        }
+    )
